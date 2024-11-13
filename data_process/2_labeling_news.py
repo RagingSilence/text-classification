@@ -1,4 +1,5 @@
 #coding:utf-8
+from importlib import reload
 import sys
 import json
 import random
@@ -15,7 +16,7 @@ num_labeled = 0
 for doc in docs:
     num += 1
     if num%10000 == 0:
-        print num
+        print(num)
     content = doc['title']+' '+doc['content']
     url = doc['url']
     label = None
@@ -32,12 +33,12 @@ for doc in docs:
     else:
         docs_labeled[str(label)].append(content)
 
-print 'all:'+str(len(docs))
-print 'labeled:'+str(num_labeled)
+print(all:)+str(len(docs))
+print(labeled:)+str(num_labeled)
 
 for i in range(1,16):
     if str(i) in docs_labeled:
-        print 'label '+str(i)+':'+str(len(docs_labeled[str(i)]))
+        print(label )+str(i)+':'+str(len(docs_labeled[str(i)]))
 
 fout = open('news_sohusite_labeled.json','w')
 fout.write(json.dumps(docs_labeled,ensure_ascii=False,indent=4))

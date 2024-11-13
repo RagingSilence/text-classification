@@ -52,9 +52,9 @@ def produce_docs(docs):
                     nums += 1
                     if nums == 2000:
                         break
-                print 'label '+str(label_num)+': train '+str(train_num)+', test '+str(test_num)
-    print 'train docs:'+str(len(train_docs))
-    print 'test docs:'+str(len(test_docs))
+                print(label )+str(label_num)+': train '+str(train_num)+', test '+str(test_num)
+    print(train docs:)+str(len(train_docs))
+    print(test docs:)+str(len(test_docs))
     
     random.shuffle(train_docs)
     random.shuffle(test_docs)

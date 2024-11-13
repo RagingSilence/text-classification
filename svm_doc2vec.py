@@ -1,4 +1,5 @@
 #coding:utf-8
+from importlib import reload
 import sys
 reload(sys)
 sys.setdefaultencoding('utf8')
@@ -23,13 +24,13 @@ def train_d2v_model():
     sentences = gensim.models.doc2vec.TaggedLineDocument('all_contents.txt')
     model = gensim.models.Doc2Vec(sentences, size=200, window=5, min_count=5)
     model.save('doc2vec.model')
-    print 'num of docs: ' + str(len(model.docvecs))
+    print ("num of docs:")  + str(len(model.docvecs))
         
 
 if __name__ == '__main__':
-    print '(1) training doc2vec model...'
+    print("(1) training doc2vec model...")
     # train_d2v_model()
-    print '(2) load doc2vec model...'
+    print("(2) load doc2vec model...")
     import gensim
     model = gensim.models.Doc2Vec.load('doc2vec.model')
     x_train = []
@@ -41,10 +42,10 @@ if __name__ == '__main__':
             x_train.append(docvec)
         else:
             x_test.append(docvec)
-    print 'train doc shape: '+str(len(x_train))+' , '+str(len(x_train[0]))
-    print 'test doc shape: '+str(len(x_test))+' , '+str(len(x_test[0]))
+    print("train doc shape: ")+str(len(x_train))+' , '+str(len(x_train[0]))
+    print("test doc shape: ")+str(len(x_test))+' , '+str(len(x_test[0]))
 
-    print '(3) SVM...'
+    print("(3) SVM...")
     from sklearn.svm import SVC   
     svclf = SVC(kernel = 'rbf') 
     svclf.fit(x_train,y_train)  
@@ -54,7 +55,7 @@ if __name__ == '__main__':
     for i,pred in enumerate(preds):
         if int(pred) == int(y_test[i]):
             num += 1
-    print 'precision_score:' + str(float(num) / len(preds))
+    print("precision_score:") + str(float(num) / len(preds))
 
 
 
