@@ -1,9 +1,3 @@
-#coding:utf-8
-from base64 import encode
-from importlib import reload
-import sys
-reload(sys)
-sys.setdefaultencoding('utf8')
 
 VECTOR_DIR = 'vectors.bin'
 

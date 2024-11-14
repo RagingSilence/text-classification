@@ -1,11 +1,4 @@
-#coding:utf-8
-from importlib import reload
-import sys
-import keras
-reload(sys)
-sys.setdefaultencoding('utf8')
 
-VECTOR_DIR = 'vectors.bin'
 
 MAX_SEQUENCE_LENGTH = 100
 EMBEDDING_DIM = 200
@@ -53,6 +46,28 @@ print("val docs: ")+str(len(x_val))
 print("test docs: ")+str(len(x_test))
 
 
+print("(4) load word2vec as embedding...")
+import gensim
+from keras.utils import plot_model
+w2v_model = gensim.models.KeyedVectors.load_word2vec_format(VECTOR_DIR, binary=True)
+embedding_matrix = np.zeros((len(word_index) + 1, EMBEDDING_DIM))
+not_in_model = 0
+in_model = 0
+for word, i in word_index.items(): 
+    if encode(word) in w2v_model:
+        in_model += 1
+        embedding_matrix[i] = np.asarray(w2v_model[encode(word)], dtype='float32')
+    else:
+        not_in_model += 1
+print( str(not_in_model))
+print(' words not in w2v model')
+from keras.layers import Embedding
+embedding_layer = Embedding(len(word_index) + 1,
+                            EMBEDDING_DIM,
+                            weights=[embedding_matrix],
+                            input_length=MAX_SEQUENCE_LENGTH,
+                            trainable=False)
+
 
 print("(5) training model...")
 from keras.layers import Dense, Input, Flatten, Dropout
@@ -60,22 +75,22 @@ from keras.layers import LSTM, Embedding
 from keras.models import Sequential
 
 model = Sequential()
-model.add(Embedding(len(word_index) + 1, EMBEDDING_DIM, input_length=MAX_SEQUENCE_LENGTH))
+model.add(embedding_layer)
 model.add(LSTM(200, dropout=0.2, recurrent_dropout=0.2))
 model.add(Dropout(0.2))
 model.add(Dense(labels.shape[1], activation='softmax'))
 model.summary()
-
-
+plot_model(model, to_file='model.png',show_shapes=True)
+exit(0)
 model.compile(loss='categorical_crossentropy',
               optimizer='rmsprop',
               metrics=['acc'])
 print(model.metrics_names)
 model.fit(x_train, y_train, validation_data=(x_val, y_val), epochs=2, batch_size=128)
-model.save('lstm.h5')
+model.save('word_vector_lstm.h5')
 
 print("(6) testing model...")
-print (model.evaluate(x_test, y_test))
+print(model.evaluate(x_test, y_test))
 
         
 
