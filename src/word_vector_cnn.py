@@ -9,7 +9,7 @@ from keras.models import Sequential
 import gensim
 import numpy as np
 
-
+# TODO 缺少bin文件 暂未跑通
 VECTOR_DIR = 'vectors.bin'
 MAX_SEQUENCE_LENGTH = 100
 EMBEDDING_DIM = 200

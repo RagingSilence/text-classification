@@ -1,4 +1,4 @@
-
+# TODO 没跑
 VECTOR_DIR = 'vectors.bin'
 
 MAX_SEQUENCE_LENGTH = 100

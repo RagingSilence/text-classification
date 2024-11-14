@@ -1,6 +1,7 @@
 # coding:utf-8
 from src.data_input import get_dataset, get_path
 
+# TODO 没跑通
 MAX_SEQUENCE_LENGTH = 100
 EMBEDDING_DIM = 200
 TEST_SPLIT = 0.2
