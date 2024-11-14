@@ -13,7 +13,7 @@ def get_path() -> str:
     """
     :return: 数据集存放的绝对路径
     """
-    # 获取当前文件的绝对路径
+    # 获取当前文件的  绝对路径
     current_file_path = os.path.abspath(__file__)
     # 获取当前文件所在的目录
     current_dir = os.path.dirname(current_file_path)
