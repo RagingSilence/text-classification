@@ -3,7 +3,8 @@ import json
 import requests
 
 """
-实验性爬取  https://gongyi.sohu.com/   搜狐公益新闻
+实验性爬取   搜狐新闻
+先尝试爬取公益新闻
 """
 
 """
@@ -20,7 +21,7 @@ post_data = {
     },
     "resourceList": [
         {
-            "tplCompKey": "TPLFeedMul_2_9_feedData",
+            "tplCompKey": "TPLFeedMul_2_9_feedData",  # 不重要 随便填后面获取数据时保持一致即可
 
             "configSource": "mp",
             "content": {
@@ -40,3 +41,35 @@ headers = {
 }
 resp = requests.post(url=url, data=json.dumps(post_data), headers=headers)
 data = resp.json()['data']['TPLFeedMul_2_9_feedData']['list']  # data是个列表 其中有新闻url 相对路径
+
+"""
+爬取教育网页 只有productId与productId与上面不同
+"""
+post_data = {
+    "mainContent": {
+        "productType": "13",
+        "productId": "531",  # 只有这个不同
+        "secureScore": "50"
+
+    },
+    "resourceList": [
+        {
+            "tplCompKey": "TPLFeedMul_2_9_feedData",
+
+            "configSource": "mp",
+            "content": {
+                "productId": "665",
+                "productType": "13",
+                "size": 20,  # 每页给出的新闻数量 实验得最大值为100
+                "page": 0,  # 当前页
+                "requestId": "1731934160045iGvyWZL_503"
+            }
+        }
+    ]
+}
+resp = requests.post(url=url, data=json.dumps(post_data), headers=headers)
+data = resp.json()['data']['TPLFeedMul_2_9_feedData']['list']  # data是个列表 其中有新闻url 相对路径
+"""
+    后续 1.可手动获取不同类别的productId与productId
+        2.对data中的url进行爬取
+"""
