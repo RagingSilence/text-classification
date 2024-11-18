@@ -23,7 +23,6 @@ post_data = {
         {
             "tplCompKey": "TPLFeedMul_2_9_feedData",  # 不重要 随便填后面获取数据时保持一致即可
 
-            "configSource": "mp",
             "content": {
                 "productId": "501",
                 "productType": "13",
@@ -56,7 +55,6 @@ post_data = {
         {
             "tplCompKey": "TPLFeedMul_2_9_feedData",
 
-            "configSource": "mp",
             "content": {
                 "productId": "665",
                 "productType": "13",
