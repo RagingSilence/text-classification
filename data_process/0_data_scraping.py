@@ -70,6 +70,6 @@ post_data = {
 resp = requests.post(url=url, data=json.dumps(post_data), headers=headers)
 data = resp.json()['data']['TPLFeedMul_2_9_feedData']['list']  # data是个列表 其中有新闻url 相对路径
 """
-    后续 1.可手动获取不同类别的productId与productId
+    后续 1.可手动获取不同类别的productId与productId {https://www.sohu.com/ 查找需要的类别}
         2.对data中的url进行爬取
 """
