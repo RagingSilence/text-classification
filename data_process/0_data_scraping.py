@@ -9,14 +9,14 @@ import requests
 
 """
     post 请求url https://odin.sohu.com/odin/api/blockdata
-    post_data 请求体必要参数 有可能会过期 重要字段 page与size
+    post_data 请求体必要参数 有可能会过期 重要字段 productId productId page与size
 """
 url = 'https://odin.sohu.com/odin/api/blockdata'
 post_data = {
     "mainContent": {
-        "productType": "13",
+        "productType": "13",  # 默认
         "productId": "503",
-        "secureScore": "50"
+        "secureScore": "50"  # 默认
 
     },
     "resourceList": [
@@ -25,10 +25,10 @@ post_data = {
 
             "content": {
                 "productId": "501",
-                "productType": "13",
+                "productType": "13",  # 默认
                 "size": 20,  # 每页给出的新闻数量 实验得最大值为100
                 "page": 0,  # 当前页
-                "requestId": "1731934160045iGvyWZL_503"
+                "requestId": "1731934160045iGvyWZL_503"  # 不重要 随便填
             }
         }
     ]
