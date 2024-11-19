@@ -1,10 +1,10 @@
 
-from src.data_input import get_dataset
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 from keras.utils.np_utils import to_categorical
 import numpy as np
 
+from src.utils.data_input import get_dataset
 
 MAX_SEQUENCE_LENGTH = 100
 EMBEDDING_DIM = 200

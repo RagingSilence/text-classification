@@ -1,10 +1,11 @@
-from src.data_input import get_dataset
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 from keras.utils.np_utils import to_categorical
 import numpy as np
 import gensim
 from keras.utils.vis_utils import plot_model
+
+from src.utils.data_input import get_dataset
 
 VECTOR_DIR = 'vectors.bin'
 MAX_SEQUENCE_LENGTH = 100

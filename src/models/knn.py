@@ -1,8 +1,9 @@
 # coding:utf-8
 
-from src.data_input import get_dataset
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from sklearn.neighbors import KNeighborsClassifier
+
+from src.utils.data_input import get_dataset
 
 MAX_SEQUENCE_LENGTH = 100
 EMBEDDING_DIM = 200
