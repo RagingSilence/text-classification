@@ -1,7 +1,9 @@
+import asyncio
 import json
 import os
+from collections import defaultdict
 from datetime import datetime
-
+from aiohttp import ClientSession
 import requests
 import pandas as pd
 from src.utils.Logger import Logger
@@ -42,16 +44,19 @@ class NewsCategory:
     @staticmethod
     def get_default_categories():
         return [
-            NewsCategory('公益新闻', 13, 501),
-            NewsCategory('教育新闻', 13, 665),
+            NewsCategory('公益', 13, 501),
+            NewsCategory('教育', 13, 665),
             NewsCategory('国内军事', 13, 2027),
-            NewsCategory('体育新闻', 13, 1202),
+            NewsCategory('体育', 13, 1202),
             NewsCategory('健康', 13, 1595),
             NewsCategory('游戏', 15, 56210),
             NewsCategory('科技', 15, 54822),
             NewsCategory('美食', 13, 2096),
             NewsCategory('历史', 13, 396),
             NewsCategory('政务', 13, 502),
+            NewsCategory('房产', 13, 7238),
+            NewsCategory('财经', 15, 54401),
+            NewsCategory('旅游', 13, 2079),
         ]
 
 
@@ -105,14 +110,25 @@ class RequestData:
         return 'https://www.sohu.com'
 
 
-def download():
+def get_url_base_path():
+    return os.path.join(get_path(), 'urls')
+
+
+def get_news_base_path():
+    return os.path.join(get_path(), 'news')
+
+
+def urls_download():
+    """
+    爬取各种类别新闻的urls列表并保存在data文件夹下
+    """
     for category in NewsCategory.get_default_categories():
         urls = get_urls(category)
         df = pd.DataFrame(urls)
-        path = os.path.join(get_path(), datetime.now().strftime('%m-%d-%H-%M'))
+        path = os.path.join(get_url_base_path(), datetime.now().strftime('%m-%d-%H-%M'))
         if not os.path.exists(path):
             os.makedirs(path)
-        df.to_csv(os.path.join(path, str(category) + '.csv'), index=False)
+        df.to_csv(path_or_buf=os.path.join(path, str(category) + '.csv'), index=False)
 
 
 def get_urls(category: NewsCategory, item_nums: int = 1000):
@@ -122,40 +138,29 @@ def get_urls(category: NewsCategory, item_nums: int = 1000):
     :param item_nums: 爬取的最大数量 初步测试，网站后端最多返回300条以内的数据
     :return: 新闻url列表
     """
-
     resp = requests.post(url=RequestData.get_post_url(), data=RequestData.get_post_json_data(category),
                          headers=RequestData.get_headers())
     urls = [ele['url'] for ele in resp.json()['data'][RequestData.get_tplCompKey()]['list']]
     Logger.log(category, len(urls))
     return urls
-    # while len(urls) < item_nums:
-    #     # 保存urls_post结果
-    #     urls_p = urls_post(category, len(urls) // RequestData.DEFAULT_PAGE_SIZE)
-    #     if urls_p is None:
-    #         break
-    #     urls += urls_p
-    #     Logger.log(category, len(urls))
-    # print(len(set(urls)))
 
 
-# def urls_post(category: NewsCategory, page: int):
-#     """
-#     发送请求 对含有urls的响应体进行解析获得url列表
-#     :param category: 类别
-#     :param page: 页码
-#     :return:
-#     """
-#     resp = requests.post(url=RequestData.get_post_url(), data=RequestData.get_post_json_data(category, page),
-#                          headers=RequestData.get_headers())
-#     resp_json = resp.json()['data'][RequestData.get_tplCompKey()]
-#     if resp_json is None or resp_json['list'] is None:
-#         return None
-#     return [ele['url'] for ele in resp_json['list']]
+def merge() -> dict:
+    record = defaultdict(list)
+    for entry in os.listdir(get_url_base_path()):
+        full_path = os.path.join(get_url_base_path(), entry)
+        if os.path.isdir(full_path):
+            for file_name in os.listdir(full_path):
+                record[file_name.split('.')[0]].append(pd.read_csv(os.path.join(full_path, file_name)))
+    for k, v in record.items():
+        print(k)
+        df = pd.concat(v)
+        print(df.shape)
+        print(df['0'].unique().shape)
+    return {k: pd.concat(v) for k, v in record.items()}
+
 
 
 if __name__ == '__main__':
-    # get_urls(NewsCategory.get_default_categories()[0])
-    # path = [get_path(), datetime.now().strftime('%m-%d-%H-%M'), str(NewsCategory.get_default_categories()[0]) + '.csv']
-    # print(path)
-    # print(os.path.join(*path))
-    download()
+    urls_download()
+    # asyncio.run(news_download())
