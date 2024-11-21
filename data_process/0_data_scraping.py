@@ -7,27 +7,20 @@ from aiohttp import ClientSession
 import requests
 import pandas as pd
 from bs4 import BeautifulSoup
+from tqdm import tqdm
 
 from src.utils.Logger import Logger
 from src.utils.data_input import get_path
 
 """
-实验性爬取   搜狐新闻
-先尝试爬取公益新闻
-"""
-
-"""
-    post 请求url https://odin.sohu.com/odin/api/blockdata
-    post_data 请求体必要参数 有可能会过期 重要字段 productId page与size
-"""
-
-"""
-    后续 1.可手动获取不同类别的productId与productId {https://www.sohu.com/ 查找需要的类别}
-        2.对data中的url进行爬取
+爬取搜狐新闻
 """
 
 
 class NewsCategory:
+    """
+    新闻类 用于爬取不同种类的新闻
+    """
 
     def __init__(self, product_name: str, product_type: int, product_id: int):
         """
@@ -63,6 +56,9 @@ class NewsCategory:
 
 
 class RequestData:
+    """
+        发送request需要的Data
+    """
     DEFAULT_PAGE_SIZE = 1000
 
     @staticmethod
@@ -71,6 +67,14 @@ class RequestData:
 
     @staticmethod
     def get_post_data(category: NewsCategory, page: int = 0, size: int = DEFAULT_PAGE_SIZE):
+        """
+        获取新闻urls列表时需要的post_data
+        一般搜狐能爬取的urls数量会在300以内 可以只post一次获取所有数据
+        :param category: 新闻类
+        :param page: 页码
+        :param size: 新闻条数
+        :return: urls post请求体
+        """
         return {
             "mainContent": {
                 "productType": "13",  # 默认
@@ -137,21 +141,25 @@ def urls_download():
         df.to_csv(path_or_buf=os.path.join(path, str(category) + '.csv'), index=False)
 
 
-def get_urls(category: NewsCategory, item_nums: int = 1000):
+def get_urls(category: NewsCategory, item_nums: int = RequestData.DEFAULT_PAGE_SIZE):
     """
-    爬取当前类别的url 不同类别爬取的条数有不同限制 可分多天爬取
+    爬取当前类别的url 不同类别爬取的条数有不同限制 可每天爬一次
     :param category: 类别
     :param item_nums: 爬取的最大数量 初步测试，网站后端最多返回300条以内的数据
     :return: 新闻url列表
     """
-    resp = requests.post(url=RequestData.get_post_url(), data=RequestData.get_post_json_data(category),
+    resp = requests.post(url=RequestData.get_post_url(), data=RequestData.get_post_json_data(category, size=item_nums),
                          headers=RequestData.get_headers())
     urls = [ele['url'] for ele in resp.json()['data'][RequestData.get_tplCompKey()]['list']]
-    Logger.log(category, len(urls))
+    Logger.log(category, 'urls数量：', len(urls))
     return urls
 
 
 def merge() -> dict:
+    """
+    将urls文件夹下各个分类下得url进行合并去重
+    :return: key为新闻种类 value为合并去重后的urls列表
+    """
     record = defaultdict(list)
     for entry in os.listdir(get_url_base_path()):
         full_path = os.path.join(get_url_base_path(), entry)
@@ -159,18 +167,17 @@ def merge() -> dict:
             for file_name in os.listdir(full_path):
                 record[file_name.split('.')[0]].append(pd.read_csv(os.path.join(full_path, file_name)))
     for k, v in record.items():
-        print(k)
         df = pd.concat(v)
-        print(df.shape)
-        print(df['0'].unique().shape)
-    return {k: pd.concat(v).iloc[:, 0].values.tolist() for k, v in record.items()}
+        t = df.shape[0]
+        v = pd.concat(v).iloc[:, 0].unique().tolist()
+        Logger.log(f'{k}\t合并前：{t}条，合并后：{len(v)}条')
+    return record
 
 
 async def fetch(url, session):
     async with session.get(url) as response:
         txt = await response.text()
-        # print(txt)
-        return txt
+        return html_to_content(txt)
 
 
 def html_to_content(html):
@@ -179,44 +186,60 @@ def html_to_content(html):
     # 遍历所有p标签并输出只包含文本的p标签的内容
     content = ''
     for p in p_tags:
-        # print(p.get_text(strip=True))
         content += p.get_text(strip=True)
+
     return content
 
 
 async def write_news_to_file(path, contents, lock):
+    """
+    写入新闻
+    :param path: 写入文件路径
+    :param contents: 新闻列表
+    :param lock: 每个batch爬取完需同步写入一次
+    :return:
+    """
     async with lock:
         with open(path, 'a', encoding='utf-8') as file:
             for content in contents:
-                file.write(content + "\t")
+                file.write(content + "\n")
 
 
-async def process_batch(path, tasks, batch_size):
+async def process_batch(path: str, tasks, batch_size, pbar):
     lock = asyncio.Lock()
     for i in range(0, len(tasks), batch_size):
         batch = tasks[i:i + batch_size]
         contents = await asyncio.gather(*batch)
         await write_news_to_file(path, contents, lock)
+        pbar.update(len(contents))
 
 
 async def news_download(batch_size=100):
     """
     并发爬取urls列表新闻
-    存在问题：urls列表元素很多时,一次性爬取完所有内容再写入文件可能导致内存不足。这里选择一百条一百条的并发
-    :param batch_size 并发数量
+    每个种类的新闻每次爬取batch_size条新闻
+    写入文件后 每一行代表一条新闻
+    :param batch_size 并发数量 可适当增大
     :return:
     """
     # key: 新闻种类 value: urls列表
     total_tasks = []
     urls_dict = merge()
-    for category, urls in urls_dict.items():
-        async with ClientSession(headers=RequestData.get_headers()) as session:
-            tasks = [fetch(url, session) for url in urls]
-        path = os.path.join(get_news_base_path(), get_time_now(), category)
-        total_tasks.append(process_batch(path, tasks, batch_size))
-    await asyncio.gather(*total_tasks)
+    folder_path = os.path.join(get_news_base_path(), get_time_now())
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+    pbar = tqdm(total=sum(len(urls) for urls in urls_dict.values()), desc=f"Processing", unit="url")
+    async with ClientSession(headers=RequestData.get_headers()) as session:
+        for category, urls in urls_dict.items():
+            tasks = [fetch(RequestData.get_page_url() + url, session) for url in urls]
+            path = os.path.join(folder_path, category + '.txt')
+            total_tasks.append(process_batch(path, tasks, batch_size, pbar))
+        await asyncio.gather(*total_tasks)
+    pbar.close()
 
 
 if __name__ == '__main__':
-    # urls_download()
-    asyncio.run(news_download())
+    # 爬取urls
+    urls_download()
+    # 爬取新闻
+    # asyncio.run(news_download())
