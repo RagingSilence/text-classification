@@ -132,6 +132,7 @@ def urls_download():
     """
     爬取各种类别新闻的urls列表并保存在data文件夹下
     """
+    cnt = 0
     for category in NewsCategory.get_default_categories():
         urls = get_urls(category)
         df = pd.DataFrame(urls)
@@ -139,6 +140,8 @@ def urls_download():
         if not os.path.exists(path):
             os.makedirs(path)
         df.to_csv(path_or_buf=os.path.join(path, str(category) + '.csv'), index=False)
+        cnt += df.shape[0]
+    Logger.log(f'共写入{cnt}条url')
 
 
 def get_urls(category: NewsCategory, item_nums: int = RequestData.DEFAULT_PAGE_SIZE):
@@ -155,7 +158,7 @@ def get_urls(category: NewsCategory, item_nums: int = RequestData.DEFAULT_PAGE_S
     return urls
 
 
-def merge() -> dict:
+def urls_merge() -> dict:
     """
     将urls文件夹下各个分类下得url进行合并去重
     :return: key为新闻种类 value为合并去重后的urls列表
@@ -224,7 +227,8 @@ async def news_download(batch_size=100):
     """
     # key: 新闻种类 value: urls列表
     total_tasks = []
-    urls_dict = merge()
+    urls_dict = urls_merge()
+    # 创建保存路径
     folder_path = os.path.join(get_news_base_path(), get_time_now())
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
