@@ -6,6 +6,8 @@ from datetime import datetime
 from aiohttp import ClientSession
 import requests
 import pandas as pd
+from bs4 import BeautifulSoup
+
 from src.utils.Logger import Logger
 from src.utils.data_input import get_path
 
@@ -118,6 +120,10 @@ def get_news_base_path():
     return os.path.join(get_path(), 'news')
 
 
+def get_time_now():
+    return datetime.now().strftime('%m-%d-%H-%M')
+
+
 def urls_download():
     """
     爬取各种类别新闻的urls列表并保存在data文件夹下
@@ -125,7 +131,7 @@ def urls_download():
     for category in NewsCategory.get_default_categories():
         urls = get_urls(category)
         df = pd.DataFrame(urls)
-        path = os.path.join(get_url_base_path(), datetime.now().strftime('%m-%d-%H-%M'))
+        path = os.path.join(get_url_base_path(), get_time_now())
         if not os.path.exists(path):
             os.makedirs(path)
         df.to_csv(path_or_buf=os.path.join(path, str(category) + '.csv'), index=False)
@@ -157,10 +163,60 @@ def merge() -> dict:
         df = pd.concat(v)
         print(df.shape)
         print(df['0'].unique().shape)
-    return {k: pd.concat(v) for k, v in record.items()}
+    return {k: pd.concat(v).iloc[:, 0].values.tolist() for k, v in record.items()}
 
+
+async def fetch(url, session):
+    async with session.get(url) as response:
+        txt = await response.text()
+        # print(txt)
+        return txt
+
+
+def html_to_content(html):
+    soup = BeautifulSoup(html, 'html.parser')
+    p_tags = soup.find_all('p')
+    # 遍历所有p标签并输出只包含文本的p标签的内容
+    content = ''
+    for p in p_tags:
+        # print(p.get_text(strip=True))
+        content += p.get_text(strip=True)
+    return content
+
+
+async def write_news_to_file(path, contents, lock):
+    async with lock:
+        with open(path, 'a', encoding='utf-8') as file:
+            for content in contents:
+                file.write(content + "\t")
+
+
+async def process_batch(path, tasks, batch_size):
+    lock = asyncio.Lock()
+    for i in range(0, len(tasks), batch_size):
+        batch = tasks[i:i + batch_size]
+        contents = await asyncio.gather(*batch)
+        await write_news_to_file(path, contents, lock)
+
+
+async def news_download(batch_size=100):
+    """
+    并发爬取urls列表新闻
+    存在问题：urls列表元素很多时,一次性爬取完所有内容再写入文件可能导致内存不足。这里选择一百条一百条的并发
+    :param batch_size 并发数量
+    :return:
+    """
+    # key: 新闻种类 value: urls列表
+    total_tasks = []
+    urls_dict = merge()
+    for category, urls in urls_dict.items():
+        async with ClientSession(headers=RequestData.get_headers()) as session:
+            tasks = [fetch(url, session) for url in urls]
+        path = os.path.join(get_news_base_path(), get_time_now(), category)
+        total_tasks.append(process_batch(path, tasks, batch_size))
+    await asyncio.gather(*total_tasks)
 
 
 if __name__ == '__main__':
-    urls_download()
-    # asyncio.run(news_download())
+    # urls_download()
+    asyncio.run(news_download())
