@@ -172,8 +172,8 @@ def urls_merge() -> dict:
     for k, v in record.items():
         df = pd.concat(v)
         t = df.shape[0]
-        v = pd.concat(v).iloc[:, 0].unique().tolist()
-        Logger.log(f'{k}\t合并前：{t}条，合并后：{len(v)}条')
+        record[k] = pd.concat(v).iloc[:, 0].unique().tolist()
+        Logger.log(f'{k}\t合并前：{t}条，合并后：{len(record[k])}条')
     return record
 
 
