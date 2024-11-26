@@ -244,6 +244,6 @@ async def news_download(batch_size=100):
 
 if __name__ == '__main__':
     # 爬取urls
-    urls_download()
+    # urls_download()
     # 爬取新闻
-    # asyncio.run(news_download())
+    asyncio.run(news_download())
