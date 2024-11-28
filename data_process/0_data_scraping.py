@@ -42,7 +42,8 @@ class NewsCategory:
             NewsCategory('公益', 13, 501),
             NewsCategory('教育', 13, 665),
             NewsCategory('国内军事', 13, 2027),
-            NewsCategory('体育', 13, 1202),
+            # NewsCategory('体育', 13, 1202),
+            NewsCategory('体育', 104, 6200),
             NewsCategory('健康', 13, 1595),
             NewsCategory('游戏', 15, 56210),
             NewsCategory('科技', 15, 54822),
@@ -188,6 +189,9 @@ def html_to_content(html):
     p_tags = soup.find_all('p')
     # 遍历所有p标签并输出只包含文本的p标签的内容
     content = ''
+    # 包含video标签 说明是视频新闻 直接返回空行
+    if soup.find_all('video'):
+        return content
     for p in p_tags:
         content += p.get_text(strip=True)
 
